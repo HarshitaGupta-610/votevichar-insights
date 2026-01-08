@@ -85,7 +85,7 @@ VoteVichar addresses this gap by providing a **scenario-based simulation platfor
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/votevichar.git
+git clone https://github.com/your-username/votevichar.git](https://github.com/HarshitaGupta-610/votevichar-insights.git
 
 # Navigate to the project directory
 cd votevichar
