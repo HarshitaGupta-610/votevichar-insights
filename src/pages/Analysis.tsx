@@ -2,8 +2,11 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageLayout from "@/components/layout/PageLayout";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { IndianRupee, Users, Building, TrendingUp, TrendingDown, Settings, ArrowRight } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts";
+import { IndianRupee, Users, Building, TrendingUp, TrendingDown, Settings, ArrowRight, Save, Truck } from "lucide-react";
+import { useRole } from "@/contexts/RoleContext";
+import { useSimulation } from "@/contexts/SimulationContext";
+import { useToast } from "@/hooks/use-toast";
 
 const financialData = [
   { name: "Current", cost: 55000, savings: 0 },
@@ -24,16 +27,65 @@ const pieData = [
   { name: "Governance", value: 25 },
 ];
 
-const COLORS = ["hsl(220, 60%, 35%)", "hsl(145, 55%, 35%)", "hsl(24, 90%, 55%)"];
+const governanceData = [
+  { year: "Y1", stability: 65, efficiency: 50, continuity: 70 },
+  { year: "Y2", stability: 72, efficiency: 62, continuity: 75 },
+  { year: "Y3", stability: 78, efficiency: 70, continuity: 80 },
+  { year: "Y4", stability: 82, efficiency: 78, continuity: 85 },
+  { year: "Y5", stability: 88, efficiency: 85, continuity: 90 },
+];
+
+const logisticsData = [
+  { subject: "EVMs", current: 80, optimized: 95 },
+  { subject: "Vehicles", current: 70, optimized: 88 },
+  { subject: "Booths", current: 75, optimized: 92 },
+  { subject: "Training", current: 65, optimized: 85 },
+  { subject: "Comm.", current: 72, optimized: 90 },
+];
+
+const COLORS = ["hsl(220, 60%, 35%)", "hsl(145, 55%, 35%)", "hsl(24, 90%, 55%)", "hsl(200, 50%, 50%)"];
 
 const Analysis = () => {
+  const { canExport } = useRole();
+  const { currentParams, saveSimulation } = useSimulation();
+  const { toast } = useToast();
+
+  const handleSaveSimulation = () => {
+    // Backend-ready: This would call an API to save the simulation
+    const newSimulation = {
+      id: `sim-${Date.now()}`,
+      name: `${currentParams?.electionModel === "full" ? "Full" : currentParams?.electionModel === "partial" ? "Partial" : "Current"} Sync - ${currentParams?.statesCount || 15} States`,
+      model: currentParams?.electionModel === "full" ? "Full Synchronization" : currentParams?.electionModel === "partial" ? "Partial Synchronization" : "Current System",
+      states: currentParams?.statesCount || 15,
+      cycle: currentParams?.cycleLength || 5,
+      costSavings: "₹27,000 Cr",
+      efficiency: "+35%",
+      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      status: "completed" as const,
+      params: currentParams || {
+        electionModel: "full",
+        statesCount: 15,
+        cycleLength: 5,
+        costAssumption: "moderate",
+        manpowerLevel: "standard",
+      },
+    };
+
+    saveSimulation(newSimulation);
+
+    toast({
+      title: "Simulation Saved",
+      description: `${newSimulation.name} has been saved to your history.`,
+    });
+  };
+
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">Impact Analysis Dashboard</h1>
           <p className="text-muted-foreground">
-            Simulation results for Full Synchronization model with 15 states
+            Simulation results for {currentParams?.electionModel === "full" ? "Full Synchronization" : currentParams?.electionModel === "partial" ? "Partial Synchronization" : "Current System"} model with {currentParams?.statesCount || 15} states
           </p>
         </div>
 
@@ -88,8 +140,8 @@ const Analysis = () => {
           </Card>
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        {/* Charts Grid - Row 1 */}
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
           {/* Financial Impact */}
           <Card>
             <CardHeader>
@@ -105,6 +157,7 @@ const Analysis = () => {
                   <XAxis dataKey="name" fontSize={12} />
                   <YAxis fontSize={12} />
                   <Tooltip />
+                  <Legend />
                   <Bar dataKey="cost" fill="hsl(220, 60%, 35%)" name="Cost" />
                   <Bar dataKey="savings" fill="hsl(145, 55%, 35%)" name="Savings" />
                 </BarChart>
@@ -127,13 +180,66 @@ const Analysis = () => {
                   <XAxis type="number" fontSize={12} />
                   <YAxis dataKey="name" type="category" fontSize={12} width={80} />
                   <Tooltip />
+                  <Legend />
                   <Bar dataKey="current" fill="hsl(24, 90%, 55%)" name="Current" />
                   <Bar dataKey="synced" fill="hsl(145, 55%, 35%)" name="Synchronized" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </div>
 
+        {/* Charts Grid - Row 2 */}
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* Governance Trends */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Building className="w-5 h-5 text-primary" />
+                Governance Impact Over Time
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <AreaChart data={governanceData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="year" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Legend />
+                  <Area type="monotone" dataKey="stability" stackId="1" stroke="hsl(220, 60%, 35%)" fill="hsl(220, 60%, 35%)" fillOpacity={0.6} name="Stability" />
+                  <Area type="monotone" dataKey="efficiency" stackId="2" stroke="hsl(145, 55%, 35%)" fill="hsl(145, 55%, 35%)" fillOpacity={0.6} name="Efficiency" />
+                  <Area type="monotone" dataKey="continuity" stackId="3" stroke="hsl(24, 90%, 55%)" fill="hsl(24, 90%, 55%)" fillOpacity={0.6} name="Continuity" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Logistics Optimization */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Truck className="w-5 h-5 text-saffron" />
+                Logistics Optimization
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <RadarChart data={logisticsData}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="subject" fontSize={11} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} fontSize={10} />
+                  <Radar name="Current" dataKey="current" stroke="hsl(24, 90%, 55%)" fill="hsl(24, 90%, 55%)" fillOpacity={0.3} />
+                  <Radar name="Optimized" dataKey="optimized" stroke="hsl(145, 55%, 35%)" fill="hsl(145, 55%, 35%)" fillOpacity={0.3} />
+                  <Legend />
+                </RadarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Grid - Row 3 */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Impact Distribution */}
           <Card>
             <CardHeader>
@@ -198,6 +304,10 @@ const Analysis = () => {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button variant="outline" className="gap-2" onClick={handleSaveSimulation}>
+            <Save className="w-4 h-4" />
+            Save Simulation
+          </Button>
           <Button asChild variant="outline" className="gap-2">
             <Link to="/scenario-setup">
               <Settings className="w-4 h-4" />

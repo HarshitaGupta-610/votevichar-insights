@@ -1,132 +1,213 @@
+import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageLayout from "@/components/layout/PageLayout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, ArrowDownRight, Minus, Plus, Eye, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { ArrowUpRight, ArrowDownRight, Minus, Plus, Download, GitCompare } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
-
-const simulations = [
-  {
-    id: 1,
-    name: "Full Sync - 28 States",
-    model: "Full Synchronization",
-    states: 28,
-    cycle: 5,
-    costSavings: "₹45,000 Cr",
-    efficiency: "+48%",
-    date: "Jan 3, 2026",
-    status: "completed",
-  },
-  {
-    id: 2,
-    name: "Partial Sync - North",
-    model: "Partial Synchronization",
-    states: 8,
-    cycle: 5,
-    costSavings: "₹12,000 Cr",
-    efficiency: "+22%",
-    date: "Jan 2, 2026",
-    status: "completed",
-  },
-  {
-    id: 3,
-    name: "Full Sync - 15 States",
-    model: "Full Synchronization",
-    states: 15,
-    cycle: 5,
-    costSavings: "₹27,000 Cr",
-    efficiency: "+35%",
-    date: "Jan 1, 2026",
-    status: "completed",
-  },
-];
-
-const comparisonMetrics = [
-  { metric: "Cost Savings", scenario1: "₹45,000 Cr", scenario2: "₹27,000 Cr", diff: "better" },
-  { metric: "Manpower Reduction", scenario1: "42%", scenario2: "35%", diff: "better" },
-  { metric: "Admin Efficiency", scenario1: "+48%", scenario2: "+35%", diff: "better" },
-  { metric: "Implementation Time", scenario1: "4 years", scenario2: "3 years", diff: "worse" },
-  { metric: "Constitutional Changes", scenario1: "Major", scenario2: "Moderate", diff: "worse" },
-  { metric: "Policy Continuity", scenario1: "High", scenario2: "High", diff: "same" },
-];
+import { useSimulation } from "@/contexts/SimulationContext";
 
 const Comparison = () => {
   const { canAccessHistory, canExport } = useRole();
+  const { savedSimulations } = useSimulation();
+  const [scenario1, setScenario1] = useState(savedSimulations[0]?.id || "");
+  const [scenario2, setScenario2] = useState(savedSimulations[2]?.id || "");
 
   if (!canAccessHistory()) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const sim1 = savedSimulations.find((s) => s.id === scenario1);
+  const sim2 = savedSimulations.find((s) => s.id === scenario2);
+
+  // Generate comparison data based on selected scenarios
+  const comparisonMetrics = [
+    { 
+      metric: "Cost Savings", 
+      scenario1: sim1?.costSavings || "N/A", 
+      scenario2: sim2?.costSavings || "N/A", 
+      diff: "better" 
+    },
+    { 
+      metric: "Manpower Reduction", 
+      scenario1: sim1?.efficiency || "N/A", 
+      scenario2: sim2?.efficiency || "N/A", 
+      diff: "better" 
+    },
+    { 
+      metric: "States Covered", 
+      scenario1: sim1?.states.toString() || "N/A", 
+      scenario2: sim2?.states.toString() || "N/A", 
+      diff: sim1 && sim2 && sim1.states > sim2.states ? "better" : "worse" 
+    },
+    { 
+      metric: "Cycle Length", 
+      scenario1: `${sim1?.cycle || 0} years`, 
+      scenario2: `${sim2?.cycle || 0} years`, 
+      diff: "same" 
+    },
+    { 
+      metric: "Model Type", 
+      scenario1: sim1?.model || "N/A", 
+      scenario2: sim2?.model || "N/A", 
+      diff: "same" 
+    },
+  ];
+
+  // Chart data for comparison
+  const comparisonChartData = [
+    { 
+      name: "Cost Savings", 
+      [sim1?.name || "Scenario 1"]: parseInt(sim1?.costSavings?.replace(/[^0-9]/g, "") || "0") / 1000,
+      [sim2?.name || "Scenario 2"]: parseInt(sim2?.costSavings?.replace(/[^0-9]/g, "") || "0") / 1000,
+    },
+    { 
+      name: "States", 
+      [sim1?.name || "Scenario 1"]: sim1?.states || 0,
+      [sim2?.name || "Scenario 2"]: sim2?.states || 0,
+    },
+    { 
+      name: "Efficiency (%)", 
+      [sim1?.name || "Scenario 1"]: parseInt(sim1?.efficiency?.replace(/[^0-9]/g, "") || "0"),
+      [sim2?.name || "Scenario 2"]: parseInt(sim2?.efficiency?.replace(/[^0-9]/g, "") || "0"),
+    },
+  ];
+
+  const trendData = [
+    { year: "Y1", scenario1: 10, scenario2: 8 },
+    { year: "Y2", scenario1: 25, scenario2: 18 },
+    { year: "Y3", scenario1: 42, scenario2: 30 },
+    { year: "Y4", scenario1: 58, scenario2: 42 },
+    { year: "Y5", scenario1: 75, scenario2: 55 },
+  ];
+
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Comparison & History</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Scenario Comparison</h1>
           <p className="text-muted-foreground">
-            Review and compare previous simulation results
+            Compare different simulation scenarios side-by-side
           </p>
         </div>
 
-        {/* Previous Simulations */}
+        {/* Scenario Selection */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-base">Previous Simulations</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <GitCompare className="w-5 h-5 text-primary" />
+              Select Scenarios to Compare
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Scenario Name</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead className="text-center">States</TableHead>
-                  <TableHead className="text-center">Cycle</TableHead>
-                  <TableHead>Cost Savings</TableHead>
-                  <TableHead>Efficiency</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {simulations.map((sim) => (
-                  <TableRow key={sim.id}>
-                    <TableCell className="font-medium">{sim.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {sim.model}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">{sim.states}</TableCell>
-                    <TableCell className="text-center">{sim.cycle} yrs</TableCell>
-                    <TableCell className="text-india-green font-medium">{sim.costSavings}</TableCell>
-                    <TableCell>
-                      <span className="text-india-green flex items-center gap-1">
-                        <ArrowUpRight className="w-4 h-4" />
-                        {sim.efficiency}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link to="/analysis">
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Scenario 1</label>
+                <Select value={scenario1} onValueChange={setScenario1}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select first scenario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {savedSimulations.map((sim) => (
+                      <SelectItem key={sim.id} value={sim.id} disabled={sim.id === scenario2}>
+                        {sim.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {sim1 && (
+                  <Badge className="bg-primary">{sim1.name}</Badge>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Scenario 2</label>
+                <Select value={scenario2} onValueChange={setScenario2}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select second scenario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {savedSimulations.map((sim) => (
+                      <SelectItem key={sim.id} value={sim.id} disabled={sim.id === scenario1}>
+                        {sim.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {sim2 && (
+                  <Badge variant="outline">{sim2.name}</Badge>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Side-by-Side Comparison */}
-        <Card>
+        {/* Comparison Charts */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Bar Chart Comparison */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Key Metrics Comparison</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={comparisonChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" fontSize={11} />
+                  <YAxis fontSize={11} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey={sim1?.name || "Scenario 1"} fill="hsl(220, 60%, 35%)" />
+                  <Bar dataKey={sim2?.name || "Scenario 2"} fill="hsl(145, 55%, 35%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Trend Comparison */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Projected Savings Trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="year" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="scenario1" 
+                    stroke="hsl(220, 60%, 35%)" 
+                    strokeWidth={2}
+                    name={sim1?.name || "Scenario 1"}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="scenario2" 
+                    stroke="hsl(145, 55%, 35%)" 
+                    strokeWidth={2}
+                    name={sim2?.name || "Scenario 2"}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Side-by-Side Comparison Table */}
+        <Card className="mb-8">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Scenario Comparison</CardTitle>
+              <CardTitle className="text-base">Detailed Comparison</CardTitle>
               <div className="flex gap-2">
-                <Badge className="bg-primary">Full Sync - 28 States</Badge>
-                <Badge variant="outline">Full Sync - 15 States</Badge>
+                {sim1 && <Badge className="bg-primary">{sim1.name}</Badge>}
+                {sim2 && <Badge variant="outline">{sim2.name}</Badge>}
               </div>
             </div>
           </CardHeader>
@@ -135,8 +216,8 @@ const Comparison = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-1/3">Metric</TableHead>
-                  <TableHead className="text-center bg-primary/5">Scenario 1 (28 States)</TableHead>
-                  <TableHead className="text-center">Scenario 2 (15 States)</TableHead>
+                  <TableHead className="text-center bg-primary/5">Scenario 1</TableHead>
+                  <TableHead className="text-center">Scenario 2</TableHead>
                   <TableHead className="text-center">Difference</TableHead>
                 </TableRow>
               </TableHeader>
