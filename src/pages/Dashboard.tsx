@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import PageLayout from "@/components/layout/PageLayout";
-import { Plus, History, GitCompare, ArrowRight } from "lucide-react";
+import { Plus, History, GitCompare, ArrowRight, Lock } from "lucide-react";
+import { useRole } from "@/contexts/RoleContext";
 
 const Dashboard = () => {
+  const { role, hasFullAccess, canAccessHistory, isViewOnly } = useRole();
+
   const options = [
     {
       title: "New Simulation",
@@ -13,6 +17,8 @@ const Dashboard = () => {
       color: "text-primary",
       bgColor: "bg-primary/10",
       borderColor: "border-l-primary",
+      requiresFullAccess: false,
+      disabled: isViewOnly(),
     },
     {
       title: "View Previous Simulations",
@@ -22,6 +28,8 @@ const Dashboard = () => {
       color: "text-india-green",
       bgColor: "bg-india-green/10",
       borderColor: "border-l-india-green",
+      requiresFullAccess: false,
+      disabled: !canAccessHistory(),
     },
     {
       title: "Compare Scenarios",
@@ -31,39 +39,71 @@ const Dashboard = () => {
       color: "text-saffron",
       bgColor: "bg-saffron/10",
       borderColor: "border-l-saffron",
+      requiresFullAccess: false,
+      disabled: !canAccessHistory(),
     },
   ];
+
+  const getRoleBadge = () => {
+    switch (role) {
+      case "government":
+        return <Badge className="bg-primary">Government User</Badge>;
+      case "researcher":
+        return <Badge className="bg-india-green">Researcher</Badge>;
+      case "guest":
+        return <Badge variant="outline">Guest (View Only)</Badge>;
+      default:
+        return null;
+    }
+  };
 
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">
           <div className="mb-10">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Dashboard</h1>
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              {getRoleBadge()}
+            </div>
             <p className="text-muted-foreground">
               Select an action to begin exploring election synchronization scenarios
             </p>
           </div>
 
           <div className="space-y-4">
-            {options.map((option) => (
-              <Link key={option.title} to={option.link}>
-                <Card className={`border-l-4 ${option.borderColor} hover:shadow-md transition-all cursor-pointer group`}>
+            {options.map((option) => {
+              const content = (
+                <Card className={`border-l-4 ${option.borderColor} ${option.disabled ? 'opacity-60' : 'hover:shadow-md cursor-pointer group'} transition-all`}>
                   <CardContent className="p-6 flex items-center gap-6">
                     <div className={`w-14 h-14 rounded-lg ${option.bgColor} flex items-center justify-center`}>
                       <option.icon className={`w-7 h-7 ${option.color}`} />
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-lg mb-1 group-hover:text-primary transition-colors">
+                      <CardTitle className={`text-lg mb-1 ${!option.disabled ? 'group-hover:text-primary' : ''} transition-colors`}>
                         {option.title}
                       </CardTitle>
                       <CardDescription>{option.description}</CardDescription>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    {option.disabled ? (
+                      <Lock className="w-5 h-5 text-muted-foreground" />
+                    ) : (
+                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    )}
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
+              );
+
+              if (option.disabled) {
+                return <div key={option.title}>{content}</div>;
+              }
+
+              return (
+                <Link key={option.title} to={option.link}>
+                  {content}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Quick Stats */}
