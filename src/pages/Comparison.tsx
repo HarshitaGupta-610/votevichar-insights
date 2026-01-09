@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import PageLayout from "@/components/layout/PageLayout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, ArrowDownRight, Minus, Plus, Eye } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Minus, Plus, Eye, Download } from "lucide-react";
+import { useRole } from "@/contexts/RoleContext";
 
 const simulations = [
   {
@@ -52,6 +53,12 @@ const comparisonMetrics = [
 ];
 
 const Comparison = () => {
+  const { canAccessHistory, canExport } = useRole();
+
+  if (!canAccessHistory()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8">
@@ -167,7 +174,13 @@ const Comparison = () => {
         </Card>
 
         {/* Actions */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center gap-4">
+          {canExport() && (
+            <Button variant="outline" className="gap-2">
+              <Download className="w-4 h-4" />
+              Export Report
+            </Button>
+          )}
           <Button asChild className="gap-2">
             <Link to="/scenario-setup">
               <Plus className="w-4 h-4" />

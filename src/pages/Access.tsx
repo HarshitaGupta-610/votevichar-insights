@@ -4,40 +4,41 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import PageLayout from "@/components/layout/PageLayout";
 import { Building2, GraduationCap, User, ArrowRight } from "lucide-react";
-
-type UserType = "government" | "researcher" | "guest" | null;
+import { useRole, UserRole } from "@/contexts/RoleContext";
 
 const Access = () => {
-  const [selectedType, setSelectedType] = useState<UserType>(null);
+  const [selectedType, setSelectedType] = useState<UserRole>(null);
   const navigate = useNavigate();
+  const { setRole } = useRole();
 
   const handleProceed = () => {
     if (selectedType) {
+      setRole(selectedType);
       navigate("/dashboard");
     }
   };
 
   const userTypes = [
     {
-      id: "government" as UserType,
+      id: "government" as UserRole,
       title: "Government User",
-      description: "Policy makers, election officials, and government stakeholders",
+      description: "Full access: simulations, history, comparison, and export",
       icon: Building2,
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
     {
-      id: "researcher" as UserType,
+      id: "researcher" as UserRole,
       title: "Researcher",
-      description: "Academic researchers, think tanks, and policy analysts",
+      description: "Access to analysis, comparison, and simulation features",
       icon: GraduationCap,
       color: "text-india-green",
       bgColor: "bg-india-green/10",
     },
     {
-      id: "guest" as UserType,
+      id: "guest" as UserRole,
       title: "Guest",
-      description: "Citizens, journalists, and civic-minded individuals",
+      description: "View-only access to explore the platform",
       icon: User,
       color: "text-saffron",
       bgColor: "bg-saffron/10",

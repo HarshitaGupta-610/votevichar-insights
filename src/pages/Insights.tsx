@@ -3,9 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import PageLayout from "@/components/layout/PageLayout";
-import { CheckCircle2, AlertTriangle, Info, ArrowRight, RotateCcw, LayoutDashboard, FileText, Scale, Clock, Shield } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Info, ArrowRight, RotateCcw, LayoutDashboard, FileText, Scale, Clock, Shield, Download } from "lucide-react";
+import { useRole } from "@/contexts/RoleContext";
 
 const Insights = () => {
+  const { canExport } = useRole();
+
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8">
@@ -152,6 +155,12 @@ const Insights = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {canExport() && (
+              <Button variant="outline" className="gap-2">
+                <Download className="w-4 h-4" />
+                Export Report
+              </Button>
+            )}
             <Button asChild variant="outline" className="gap-2">
               <Link to="/scenario-setup">
                 <RotateCcw className="w-4 h-4" />
