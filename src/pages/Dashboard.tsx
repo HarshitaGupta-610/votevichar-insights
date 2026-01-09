@@ -2,11 +2,18 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import PageLayout from "@/components/layout/PageLayout";
-import { Plus, History, GitCompare, ArrowRight, Lock } from "lucide-react";
+import { Plus, History, GitCompare, ArrowRight, Lock, Eye } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
+import { useUser } from "@/contexts/UserContext";
+import { useSimulation } from "@/contexts/SimulationContext";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const { role, hasFullAccess, canAccessHistory, isViewOnly } = useRole();
+  const { user } = useUser();
+  const { getRecentSimulations, savedSimulations } = useSimulation();
+
+  const recentSimulations = getRecentSimulations(5);
 
   const options = [
     {
@@ -21,10 +28,10 @@ const Dashboard = () => {
       disabled: isViewOnly(),
     },
     {
-      title: "View Previous Simulations",
+      title: "View History",
       description: "Access and review your saved simulation results and analyses",
       icon: History,
-      link: "/comparison",
+      link: "/history",
       color: "text-india-green",
       bgColor: "bg-india-green/10",
       borderColor: "border-l-india-green",
@@ -57,13 +64,18 @@ const Dashboard = () => {
     }
   };
 
+  const displayName = user?.fullName || "User";
+
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">
+          {/* Welcome Message */}
           <div className="mb-10">
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              <h1 className="text-2xl font-bold text-foreground">
+                Welcome, {displayName}
+              </h1>
               {getRoleBadge()}
             </div>
             <p className="text-muted-foreground">
@@ -71,6 +83,7 @@ const Dashboard = () => {
             </p>
           </div>
 
+          {/* Action Cards */}
           <div className="space-y-4">
             {options.map((option) => {
               const content = (
@@ -117,10 +130,56 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground">States Covered</p>
             </Card>
             <Card className="text-center p-4">
-              <p className="text-2xl font-bold text-saffron">5</p>
+              <p className="text-2xl font-bold text-saffron">{savedSimulations.length}</p>
               <p className="text-xs text-muted-foreground">Saved Scenarios</p>
             </Card>
           </div>
+
+          {/* Recent Simulations */}
+          {canAccessHistory() && recentSimulations.length > 0 && (
+            <Card className="mt-8">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Recent Simulations</CardTitle>
+                  <Button asChild variant="ghost" size="sm" className="gap-1">
+                    <Link to="/history">
+                      View All
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentSimulations.map((sim) => (
+                    <div
+                      key={sim.id}
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-india-green" />
+                        <div>
+                          <p className="text-sm font-medium">{sim.name}</p>
+                          <p className="text-xs text-muted-foreground">{sim.date}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-india-green">{sim.costSavings}</p>
+                          <p className="text-xs text-muted-foreground">{sim.efficiency} efficiency</p>
+                        </div>
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to="/analysis">
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </PageLayout>

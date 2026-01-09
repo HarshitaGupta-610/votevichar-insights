@@ -24,20 +24,24 @@ const Landing = () => {
             Thoughtful, data-driven insights for election synchronization
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Button asChild size="lg" className="gap-2">
-              <Link to="/access">
+              <Link to="/login">
                 <CheckSquare className="w-5 h-5" />
                 Start Analysis
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="gap-2">
-              <Link to="/comparison">
+              <Link to="/signup">
                 <BarChart3 className="w-5 h-5" />
-                View Previous Analysis
+                Create Account
               </Link>
             </Button>
           </div>
+          
+          <p className="text-sm text-muted-foreground mb-12">
+            Or <Link to="/access" className="text-primary hover:underline">continue as guest</Link>
+          </p>
         </div>
 
         {/* What is VoteVichar */}

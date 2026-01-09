@@ -7,9 +7,11 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import PageLayout from "@/components/layout/PageLayout";
 import { Play, Settings2, IndianRupee, Users, Calendar } from "lucide-react";
+import { useSimulation, SimulationParams } from "@/contexts/SimulationContext";
 
 const ScenarioSetup = () => {
   const navigate = useNavigate();
+  const { setCurrentParams } = useSimulation();
   const [electionModel, setElectionModel] = useState("");
   const [statesCount, setStatesCount] = useState([15]);
   const [cycleLength, setCycleLength] = useState([5]);
@@ -17,6 +19,18 @@ const ScenarioSetup = () => {
   const [manpowerLevel, setManpowerLevel] = useState("");
 
   const handleRunSimulation = () => {
+    // Backend-ready: Prepare data object for API
+    const simulationParams: SimulationParams = {
+      electionModel,
+      statesCount: statesCount[0],
+      cycleLength: cycleLength[0],
+      costAssumption,
+      manpowerLevel,
+    };
+
+    // Store params in context (ready for backend integration)
+    setCurrentParams(simulationParams);
+
     navigate("/processing");
   };
 
