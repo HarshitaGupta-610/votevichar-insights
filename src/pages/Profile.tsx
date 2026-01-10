@@ -3,19 +3,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import PageLayout from "@/components/layout/PageLayout";
-import { User, Mail, Phone, Shield, LogOut, Building2, GraduationCap } from "lucide-react";
-import { useUser } from "@/contexts/UserContext";
+import { User, Mail, Phone, Shield, LogOut, Building2, GraduationCap, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, logout } = useUser();
+  const { user, profile, signOut } = useAuth();
   const { role, setRole } = useRole();
   const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  // Sync role from profile
+  useEffect(() => {
+    if (profile?.role) {
+      setRole(profile.role);
+    }
+  }, [profile, setRole]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await signOut();
     setRole(null);
     toast({
       title: "Logged Out",
@@ -24,8 +34,10 @@ const Profile = () => {
     navigate("/");
   };
 
+  const currentRole = profile?.role || role;
+
   const getRoleBadge = () => {
-    switch (role) {
+    switch (currentRole) {
       case "government":
         return (
           <Badge className="bg-primary gap-1">
@@ -53,7 +65,7 @@ const Profile = () => {
   };
 
   const getRoleDescription = () => {
-    switch (role) {
+    switch (currentRole) {
       case "government":
         return "Full access: simulations, history, comparison, and export features";
       case "researcher":
@@ -65,10 +77,9 @@ const Profile = () => {
     }
   };
 
-  // Use placeholder data if user is not logged in but has a role (guest access)
-  const displayName = user?.fullName || "Guest User";
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Guest User";
   const displayEmail = user?.email || "guest@votevichar.in";
-  const displayPhone = user?.phone || "Not provided";
+  const displayPhone = profile?.phone || "Not provided";
 
   return (
     <PageLayout>
@@ -118,16 +129,20 @@ const Profile = () => {
                   variant="destructive" 
                   className="w-full gap-2"
                   onClick={handleLogout}
+                  disabled={isLoggingOut}
                 >
-                  <LogOut className="w-4 h-4" />
-                  Logout
+                  {isLoggingOut ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Logging out...
+                    </>
+                  ) : (
+                    <>
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </>
+                  )}
                 </Button>
-              </div>
-
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground text-center">
-                  <strong>Demo Mode:</strong> Profile data is stored locally for demonstration purposes.
-                </p>
               </div>
             </CardContent>
           </Card>

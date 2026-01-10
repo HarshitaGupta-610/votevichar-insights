@@ -2,16 +2,24 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import PageLayout from "@/components/layout/PageLayout";
-import { Plus, History, GitCompare, ArrowRight, Lock, Eye } from "lucide-react";
+import { Plus, History, GitCompare, ArrowRight, Lock, Eye, Loader2 } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
-import { useUser } from "@/contexts/UserContext";
-import { useSimulation } from "@/contexts/SimulationContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSimulations } from "@/hooks/useSimulations";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 const Dashboard = () => {
-  const { role, hasFullAccess, canAccessHistory, isViewOnly } = useRole();
-  const { user } = useUser();
-  const { getRecentSimulations, savedSimulations } = useSimulation();
+  const { role, setRole, hasFullAccess, canAccessHistory, isViewOnly } = useRole();
+  const { user, profile, loading } = useAuth();
+  const { simulations, isLoading: simulationsLoading, getRecentSimulations } = useSimulations();
+
+  // Sync role from profile
+  useEffect(() => {
+    if (profile?.role) {
+      setRole(profile.role);
+    }
+  }, [profile, setRole]);
 
   const recentSimulations = getRecentSimulations(5);
 
@@ -52,7 +60,8 @@ const Dashboard = () => {
   ];
 
   const getRoleBadge = () => {
-    switch (role) {
+    const currentRole = profile?.role || role;
+    switch (currentRole) {
       case "government":
         return <Badge className="bg-primary">Government User</Badge>;
       case "researcher":
@@ -64,7 +73,17 @@ const Dashboard = () => {
     }
   };
 
-  const displayName = user?.fullName || "User";
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "User";
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="container mx-auto px-4 py-12 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -130,13 +149,13 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground">States Covered</p>
             </Card>
             <Card className="text-center p-4">
-              <p className="text-2xl font-bold text-saffron">{savedSimulations.length}</p>
+              <p className="text-2xl font-bold text-saffron">{simulations.length}</p>
               <p className="text-xs text-muted-foreground">Saved Scenarios</p>
             </Card>
           </div>
 
           {/* Recent Simulations */}
-          {canAccessHistory() && recentSimulations.length > 0 && (
+          {canAccessHistory() && (
             <Card className="mt-8">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -150,33 +169,51 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {recentSimulations.map((sim) => (
-                    <div
-                      key={sim.id}
-                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-india-green" />
-                        <div>
-                          <p className="text-sm font-medium">{sim.name}</p>
-                          <p className="text-xs text-muted-foreground">{sim.date}</p>
+                {simulationsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : recentSimulations.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground text-sm">No simulations yet. Create your first one!</p>
+                    <Button asChild className="mt-4 gap-2">
+                      <Link to="/scenario-setup">
+                        <Plus className="w-4 h-4" />
+                        New Simulation
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recentSimulations.map((sim) => (
+                      <div
+                        key={sim.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full bg-india-green" />
+                          <div>
+                            <p className="text-sm font-medium">{sim.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(sim.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-india-green">{sim.cost_savings || "Pending"}</p>
+                            <p className="text-xs text-muted-foreground">{sim.efficiency || "—"} efficiency</p>
+                          </div>
+                          <Button asChild variant="ghost" size="sm">
+                            <Link to="/analysis">
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-india-green">{sim.costSavings}</p>
-                          <p className="text-xs text-muted-foreground">{sim.efficiency} efficiency</p>
-                        </div>
-                        <Button asChild variant="ghost" size="sm">
-                          <Link to="/analysis">
-                            <Eye className="w-4 h-4" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
