@@ -5,24 +5,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PageLayout from "@/components/layout/PageLayout";
-import { LogIn } from "lucide-react";
-import { useUser } from "@/contexts/UserContext";
+import { LogIn, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { setUser } = useUser();
+  const { signIn } = useAuth();
   const { setRole } = useRole();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.email || !formData.password) {
@@ -34,22 +34,23 @@ const Login = () => {
       return;
     }
 
-    // Backend-ready: This would call an API to authenticate the user
-    // For demo purposes, we create a mock user
-    const mockUser = {
-      id: `user-${Date.now()}`,
-      fullName: formData.name || "Demo User",
-      email: formData.email,
-      phone: "",
-      role: "government" as const, // Default role for demo
-    };
+    setIsLoading(true);
 
-    setUser(mockUser);
-    setRole(mockUser.role);
+    const { error } = await signIn(formData.email, formData.password);
+
+    if (error) {
+      toast({
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     toast({
       title: "Login Successful",
-      description: `Welcome back, ${mockUser.fullName}!`,
+      description: "Welcome back!",
     });
 
     navigate("/dashboard");
@@ -72,16 +73,6 @@ const Login = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Enter your name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
@@ -89,6 +80,7 @@ const Login = () => {
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -100,12 +92,22 @@ const Login = () => {
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
-                <Button type="submit" className="w-full gap-2">
-                  <LogIn className="w-4 h-4" />
-                  Login
+                <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      Login
+                    </>
+                  )}
                 </Button>
               </form>
 
@@ -133,12 +135,6 @@ const Login = () => {
                 <Button asChild variant="outline" className="w-full">
                   <Link to="/access">Continue as Guest</Link>
                 </Button>
-              </div>
-
-              <div className="mt-4 bg-muted/50 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground text-center">
-                  <strong>Demo:</strong> Enter any email/password to access the platform.
-                </p>
               </div>
             </CardContent>
           </Card>

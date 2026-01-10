@@ -6,16 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageLayout from "@/components/layout/PageLayout";
-import { UserPlus, Building2, GraduationCap, User } from "lucide-react";
-import { useUser } from "@/contexts/UserContext";
-import { useRole, UserRole } from "@/contexts/RoleContext";
+import { UserPlus, Building2, GraduationCap, User, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { setUser } = useUser();
-  const { setRole } = useRole();
+  const { signUp } = useAuth();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -25,7 +25,7 @@ const Signup = () => {
     role: "" as UserRole | "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.fullName || !formData.email || !formData.password || !formData.role) {
@@ -37,24 +37,30 @@ const Signup = () => {
       return;
     }
 
-    // Backend-ready: This would call an API to create the user
-    const newUser = {
-      id: `user-${Date.now()}`,
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role as UserRole,
-    };
+    setIsLoading(true);
 
-    setUser(newUser);
-    setRole(formData.role as UserRole);
+    const { error } = await signUp(formData.email, formData.password, {
+      full_name: formData.fullName,
+      phone: formData.phone || undefined,
+      role: formData.role as UserRole,
+    });
+
+    if (error) {
+      toast({
+        title: "Signup Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     toast({
       title: "Account Created",
-      description: `Welcome to VoteVichar, ${formData.fullName}!`,
+      description: "Please check your email to verify your account.",
     });
 
-    navigate("/dashboard");
+    navigate("/login");
   };
 
   const roleOptions = [
@@ -101,6 +107,7 @@ const Signup = () => {
                     placeholder="Enter your full name"
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -112,6 +119,7 @@ const Signup = () => {
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -122,6 +130,7 @@ const Signup = () => {
                     placeholder="Enter your phone number"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -133,12 +142,17 @@ const Signup = () => {
                     placeholder="Create a password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    disabled={isLoading}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="role">User Role *</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}>
+                  <Select 
+                    value={formData.role} 
+                    onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}
+                    disabled={isLoading}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
@@ -155,9 +169,18 @@ const Signup = () => {
                   </Select>
                 </div>
 
-                <Button type="submit" className="w-full gap-2">
-                  <UserPlus className="w-4 h-4" />
-                  Create Account
+                <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      Create Account
+                    </>
+                  )}
                 </Button>
               </form>
 
@@ -167,12 +190,6 @@ const Signup = () => {
                   <Link to="/login" className="text-primary hover:underline font-medium">
                     Login
                   </Link>
-                </p>
-              </div>
-
-              <div className="mt-4 bg-muted/50 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground text-center">
-                  <strong>Note:</strong> This is a demo platform. No real data is stored.
                 </p>
               </div>
             </CardContent>

@@ -2,11 +2,14 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageLayout from "@/components/layout/PageLayout";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts";
-import { IndianRupee, Users, Building, TrendingUp, TrendingDown, Settings, ArrowRight, Save, Truck } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts";
+import { IndianRupee, Users, Building, TrendingUp, TrendingDown, Settings, ArrowRight, Save, Truck, Loader2 } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
 import { useSimulation } from "@/contexts/SimulationContext";
+import { useSimulations } from "@/hooks/useSimulations";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const financialData = [
   { name: "Current", cost: 55000, savings: 0 },
@@ -47,36 +50,56 @@ const COLORS = ["hsl(220, 60%, 35%)", "hsl(145, 55%, 35%)", "hsl(24, 90%, 55%)",
 
 const Analysis = () => {
   const { canExport } = useRole();
-  const { currentParams, saveSimulation } = useSimulation();
+  const { currentParams } = useSimulation();
+  const { createSimulation } = useSimulations();
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveSimulation = () => {
-    // Backend-ready: This would call an API to save the simulation
-    const newSimulation = {
-      id: `sim-${Date.now()}`,
-      name: `${currentParams?.electionModel === "full" ? "Full" : currentParams?.electionModel === "partial" ? "Partial" : "Current"} Sync - ${currentParams?.statesCount || 15} States`,
-      model: currentParams?.electionModel === "full" ? "Full Synchronization" : currentParams?.electionModel === "partial" ? "Partial Synchronization" : "Current System",
-      states: currentParams?.statesCount || 15,
-      cycle: currentParams?.cycleLength || 5,
-      costSavings: "₹27,000 Cr",
-      efficiency: "+35%",
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      status: "completed" as const,
-      params: currentParams || {
-        electionModel: "full",
-        statesCount: 15,
-        cycleLength: 5,
-        costAssumption: "moderate",
-        manpowerLevel: "standard",
-      },
-    };
+  const handleSaveSimulation = async () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please login to save simulations.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    saveSimulation(newSimulation);
+    setIsSaving(true);
 
-    toast({
-      title: "Simulation Saved",
-      description: `${newSimulation.name} has been saved to your history.`,
-    });
+    try {
+      const modelName = currentParams?.electionModel === "full" 
+        ? "Full Synchronization" 
+        : currentParams?.electionModel === "partial" 
+          ? "Partial Synchronization" 
+          : "Current System";
+
+      await createSimulation.mutateAsync({
+        name: `${modelName} - ${currentParams?.statesCount || 15} States`,
+        model: modelName,
+        states_count: currentParams?.statesCount || 15,
+        cycle_length: currentParams?.cycleLength || 5,
+        cost_assumption: currentParams?.costAssumption || "moderate",
+        manpower_level: currentParams?.manpowerLevel || "standard",
+        cost_savings: "₹27,000 Cr",
+        efficiency: "+35%",
+        status: "completed",
+      });
+
+      toast({
+        title: "Simulation Saved",
+        description: "Your simulation has been saved to your history.",
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Failed to save simulation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -304,9 +327,23 @@ const Analysis = () => {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button variant="outline" className="gap-2" onClick={handleSaveSimulation}>
-            <Save className="w-4 h-4" />
-            Save Simulation
+          <Button 
+            variant="outline" 
+            className="gap-2" 
+            onClick={handleSaveSimulation}
+            disabled={isSaving || !user}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Simulation
+              </>
+            )}
           </Button>
           <Button asChild variant="outline" className="gap-2">
             <Link to="/scenario-setup">

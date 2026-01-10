@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { RoleProvider } from "./contexts/RoleContext";
 import { UserProvider } from "./contexts/UserContext";
 import { SimulationProvider } from "./contexts/SimulationContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -25,13 +26,14 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <UserProvider>
-        <RoleProvider>
-          <SimulationProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
+      <AuthProvider>
+        <UserProvider>
+          <RoleProvider>
+            <SimulationProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
@@ -45,11 +47,12 @@ const App = () => (
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </SimulationProvider>
-        </RoleProvider>
-      </UserProvider>
+                </Routes>
+              </BrowserRouter>
+            </SimulationProvider>
+          </RoleProvider>
+        </UserProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

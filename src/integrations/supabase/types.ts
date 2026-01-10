@@ -14,7 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          phone: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      simulations: {
+        Row: {
+          cost_assumption: string
+          cost_savings: string | null
+          created_at: string
+          cycle_length: number
+          efficiency: string | null
+          id: string
+          manpower_level: string
+          model: string
+          name: string
+          states_count: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_assumption?: string
+          cost_savings?: string | null
+          created_at?: string
+          cycle_length?: number
+          efficiency?: string | null
+          id?: string
+          manpower_level?: string
+          model: string
+          name: string
+          states_count?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_assumption?: string
+          cost_savings?: string | null
+          created_at?: string
+          cycle_length?: number
+          efficiency?: string | null
+          id?: string
+          manpower_level?: string
+          model?: string
+          name?: string
+          states_count?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
