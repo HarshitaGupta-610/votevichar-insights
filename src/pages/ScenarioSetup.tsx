@@ -179,9 +179,18 @@ const ScenarioSetup = () => {
                     <SelectValue placeholder="Select manpower level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="minimal">Minimal (Optimized Deployment)</SelectItem>
-                    <SelectItem value="standard">Standard (Current Levels)</SelectItem>
-                    <SelectItem value="enhanced">Enhanced (Increased Security)</SelectItem>
+                    <SelectItem value="current">
+  Current System – Elections happen at different times across states
+</SelectItem>
+
+<SelectItem value="partial">
+  Partial Synchronization – Some states vote together in planned groups
+</SelectItem>
+
+<SelectItem value="full">
+  Full Synchronization – Whole country votes on the same day (One Nation One Election)
+</SelectItem>
+
                   </SelectContent>
                 </Select>
               </CardContent>
