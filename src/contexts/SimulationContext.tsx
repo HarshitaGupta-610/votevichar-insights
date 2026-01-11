@@ -1,5 +1,12 @@
-import { createContext, useContext, useState, ReactNode } from "react";
-import { scenarios, ScenarioConfig, getDefaultScenario } from "@/data/electionDatasets";
+import { createContext, useContext, useState, ReactNode, useMemo } from "react";
+import { 
+  scenarios, 
+  ScenarioConfig, 
+  getDefaultScenario,
+  calculateSimulationResults,
+  CalculatedResults,
+  getFallbackData
+} from "@/data/electionDatasets";
 
 export interface SimulationParams {
   electionModel: string;
@@ -7,6 +14,7 @@ export interface SimulationParams {
   cycleLength: number;
   costAssumption: string;
   manpowerLevel: string;
+  budgetLevel: string;
   scenarioId?: string;
 }
 
@@ -32,6 +40,7 @@ interface SimulationContextType {
   currentScenario: ScenarioConfig;
   setCurrentScenario: (scenario: ScenarioConfig) => void;
   availableScenarios: ScenarioConfig[];
+  calculatedResults: CalculatedResults;
 }
 
 // Placeholder simulations for demo
@@ -50,8 +59,9 @@ const initialSimulations: SimulationResult[] = [
       electionModel: "full",
       statesCount: 28,
       cycleLength: 5,
-      costAssumption: "moderate",
+      costAssumption: "medium",
       manpowerLevel: "standard",
+      budgetLevel: "normal",
       scenarioId: "lok-sabha-general",
     },
   },
@@ -69,8 +79,9 @@ const initialSimulations: SimulationResult[] = [
       electionModel: "partial",
       statesCount: 8,
       cycleLength: 5,
-      costAssumption: "conservative",
+      costAssumption: "low",
       manpowerLevel: "minimal",
+      budgetLevel: "tight",
       scenarioId: "mixed-sync-6-states",
     },
   },
@@ -88,8 +99,9 @@ const initialSimulations: SimulationResult[] = [
       electionModel: "full",
       statesCount: 15,
       cycleLength: 5,
-      costAssumption: "moderate",
+      costAssumption: "medium",
       manpowerLevel: "standard",
+      budgetLevel: "normal",
       scenarioId: "state-assembly-cycle",
     },
   },
@@ -107,8 +119,9 @@ const initialSimulations: SimulationResult[] = [
       electionModel: "current",
       statesCount: 28,
       cycleLength: 5,
-      costAssumption: "moderate",
+      costAssumption: "medium",
       manpowerLevel: "standard",
+      budgetLevel: "normal",
     },
   },
   {
@@ -125,8 +138,9 @@ const initialSimulations: SimulationResult[] = [
       electionModel: "partial",
       statesCount: 5,
       cycleLength: 4,
-      costAssumption: "conservative",
+      costAssumption: "low",
       manpowerLevel: "minimal",
+      budgetLevel: "tight",
       scenarioId: "low-turnout-stress",
     },
   },
@@ -138,6 +152,26 @@ export const SimulationProvider = ({ children }: { children: ReactNode }) => {
   const [currentParams, setCurrentParams] = useState<SimulationParams | null>(null);
   const [savedSimulations, setSavedSimulations] = useState<SimulationResult[]>(initialSimulations);
   const [currentScenario, setCurrentScenario] = useState<ScenarioConfig>(getDefaultScenario());
+
+  // Calculate results based on current params
+  const calculatedResults = useMemo(() => {
+    if (!currentParams) {
+      return getFallbackData();
+    }
+    try {
+      return calculateSimulationResults({
+        electionModel: currentParams.electionModel || "full",
+        statesCount: currentParams.statesCount || 15,
+        cycleLength: currentParams.cycleLength || 5,
+        costAssumption: currentParams.costAssumption || "medium",
+        manpowerLevel: currentParams.manpowerLevel || "standard",
+        budgetLevel: currentParams.budgetLevel || "normal",
+      });
+    } catch (error) {
+      console.error("Error calculating results, using fallback:", error);
+      return getFallbackData();
+    }
+  }, [currentParams]);
 
   const saveSimulation = (result: SimulationResult) => {
     setSavedSimulations((prev) => [result, ...prev]);
@@ -158,6 +192,7 @@ export const SimulationProvider = ({ children }: { children: ReactNode }) => {
         currentScenario,
         setCurrentScenario,
         availableScenarios: scenarios,
+        calculatedResults,
       }}
     >
       {children}

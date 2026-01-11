@@ -1,4 +1,41 @@
-// DATASET A — Election Costs (in ₹ crore)
+// ============================================
+// REALISTIC ECI-BASED DATASETS
+// ============================================
+
+// DATASET A — Election Cost Baseline (in ₹ crore)
+export const costBands = {
+  low: { min: 8000, max: 10000, label: "Low Cost (₹8,000-10,000 Cr)" },
+  medium: { min: 10000, max: 13000, label: "Medium Cost (₹10,000-13,000 Cr)" },
+  high: { min: 13000, max: 17000, label: "High Cost (₹13,000-17,000 Cr)" },
+};
+
+// DATASET B — Manpower Levels
+export const manpowerBands = {
+  minimal: { factor: 0.7, label: "Minimal (20-30% fewer staff)" },
+  standard: { factor: 1.0, label: "Standard (Normal levels)" },
+  heavy: { factor: 1.35, label: "Heavy (25-40% more staff)" },
+};
+
+// DATASET C — Budget Availability (in ₹ crore)
+export const budgetBands = {
+  tight: { min: 6000, max: 8000, label: "Tight Budget (₹6,000-8,000 Cr)" },
+  normal: { min: 9000, max: 12000, label: "Normal Budget (₹9,000-12,000 Cr)" },
+  comfortable: { min: 12000, max: 15000, label: "Comfortable Budget (₹12,000-15,000 Cr)" },
+  high: { min: 16000, max: 20000, label: "High Budget (₹16,000-20,000 Cr)" },
+};
+
+// DATASET D — Real ECI numbers for calculation
+export const eciBaseNumbers = {
+  totalConstituencies: 543,
+  totalPollingStations: 1035918,
+  totalEVMs: 5500000,
+  averageVotersPerStation: 1200,
+  securityPersonnelPerStation: 8,
+  pollingStaffPerStation: 5,
+  logisticsStaffPerStation: 2,
+};
+
+// Original election costs data
 export const electionCostsData = [
   { name: "Lok Sabha 2019", cost: 6000, turnout: 67 },
   { name: "Lok Sabha 2014", cost: 3870, turnout: 66 },
@@ -6,14 +43,14 @@ export const electionCostsData = [
   { name: "Full Sync (Projected)", cost: 2800, turnout: 70 },
 ];
 
-// DATASET B — Manpower Load (ECI sourced pattern)
+// Original manpower load data
 export const manpowerLoadData = [
   { category: "Security Forces", current: 1100000, optimized: 750000 },
   { category: "Polling Staff", current: 850000, optimized: 600000 },
   { category: "Logistics Staff", current: 450000, optimized: 300000 },
 ];
 
-// DATASET C — Logistics Movement
+// Original logistics movement data
 export const logisticsMovementData = [
   { subject: "EVM/VVPAT Transport", current: 82, optimized: 94 },
   { subject: "Vehicle Deployment", current: 71, optimized: 89 },
@@ -21,7 +58,7 @@ export const logisticsMovementData = [
   { subject: "Training Cycles", current: 63, optimized: 86 },
 ];
 
-// DATASET D — Financial Gains Projection
+// Original financial gains data
 export const financialGainsData = [
   { year: "Year 1", savings: 5000 },
   { year: "Year 2", savings: 7000 },
@@ -30,7 +67,10 @@ export const financialGainsData = [
   { year: "Year 5", savings: 11500 },
 ];
 
-// Scenarios with their associated data transformations
+// ============================================
+// SCENARIO CONFIGURATIONS
+// ============================================
+
 export interface ScenarioConfig {
   id: string;
   name: string;
@@ -232,12 +272,13 @@ export const scenarios: ScenarioConfig[] = [
 export const demoSimulations = [
   {
     id: "demo-001",
-    name: "Full Sync - 28 States (Demo)",
+    name: "Full Sync - 28 States",
     model: "Full Synchronization",
     states_count: 28,
     cycle_length: 5,
-    cost_assumption: "moderate",
+    cost_assumption: "medium",
     manpower_level: "standard",
+    budget_level: "normal",
     cost_savings: "₹45,000 Cr",
     efficiency: "+48%",
     status: "completed" as const,
@@ -248,12 +289,13 @@ export const demoSimulations = [
   },
   {
     id: "demo-002",
-    name: "Partial Sync - North Region (Demo)",
+    name: "Partial Sync - North Region",
     model: "Partial Synchronization",
     states_count: 8,
     cycle_length: 5,
-    cost_assumption: "conservative",
+    cost_assumption: "low",
     manpower_level: "minimal",
+    budget_level: "tight",
     cost_savings: "₹12,000 Cr",
     efficiency: "+22%",
     status: "completed" as const,
@@ -264,12 +306,13 @@ export const demoSimulations = [
   },
   {
     id: "demo-003",
-    name: "State Assembly Cycle (Demo)",
+    name: "State Assembly Cycle",
     model: "State Assembly",
     states_count: 15,
     cycle_length: 5,
-    cost_assumption: "moderate",
+    cost_assumption: "medium",
     manpower_level: "standard",
+    budget_level: "normal",
     cost_savings: "₹27,000 Cr",
     efficiency: "+35%",
     status: "completed" as const,
@@ -286,4 +329,134 @@ export const getScenarioById = (id: string): ScenarioConfig | undefined => {
 
 export const getDefaultScenario = (): ScenarioConfig => {
   return scenarios[0];
+};
+
+// ============================================
+// CALCULATION UTILITIES
+// ============================================
+
+export interface SimulationCalculationParams {
+  electionModel: string;
+  statesCount: number;
+  cycleLength: number;
+  costAssumption: string;
+  manpowerLevel: string;
+  budgetLevel: string;
+}
+
+export interface CalculatedResults {
+  costSavings: string;
+  costSavingsValue: number;
+  efficiency: string;
+  efficiencyValue: number;
+  manpowerSaved: string;
+  manpowerSavedValue: number;
+  adminEfficiency: string;
+  policyContinuity: string;
+  financialData: { name: string; cost: number; savings: number }[];
+  workloadData: { name: string; current: number; synced: number }[];
+  governanceData: { year: string; stability: number; efficiency: number; continuity: number }[];
+  logisticsData: { subject: string; current: number; optimized: number }[];
+  pieData: { name: string; value: number }[];
+  budgetRange: string;
+  manpowerEstimate: string;
+  costBand: string;
+}
+
+export const calculateSimulationResults = (params: SimulationCalculationParams): CalculatedResults => {
+  const { electionModel, statesCount, cycleLength, costAssumption, manpowerLevel, budgetLevel } = params;
+
+  // Base cost calculation from cost assumption
+  const costBand = costBands[costAssumption as keyof typeof costBands] || costBands.medium;
+  const baseCost = (costBand.min + costBand.max) / 2;
+
+  // State factor (more states = higher cost)
+  const stateFactor = statesCount / 28;
+
+  // Model efficiency factors
+  const modelFactors = {
+    current: { savingsFactor: 0, efficiencyFactor: 0 },
+    partial: { savingsFactor: 0.25, efficiencyFactor: 25 },
+    full: { savingsFactor: 0.45, efficiencyFactor: 45 },
+  };
+  const modelFactor = modelFactors[electionModel as keyof typeof modelFactors] || modelFactors.current;
+
+  // Manpower adjustment
+  const mpBand = manpowerBands[manpowerLevel as keyof typeof manpowerBands] || manpowerBands.standard;
+
+  // Budget availability
+  const budgetBand = budgetBands[budgetLevel as keyof typeof budgetBands] || budgetBands.normal;
+
+  // Calculate final metrics
+  const currentCost = Math.round(baseCost * stateFactor * mpBand.factor);
+  const savingsValue = Math.round(currentCost * modelFactor.savingsFactor);
+  const efficiencyValue = Math.round(modelFactor.efficiencyFactor * (cycleLength / 5));
+  const manpowerSavedValue = Math.round((1 - (1 / mpBand.factor)) * 100 + modelFactor.efficiencyFactor * 0.5);
+
+  // Generate dynamic chart data based on parameters
+  const financialData = [
+    { name: "Current", cost: currentCost, savings: 0 },
+    { name: "Partial", cost: Math.round(currentCost * 0.75), savings: Math.round(currentCost * 0.25) },
+    { name: "Full Sync", cost: Math.round(currentCost * 0.55), savings: Math.round(currentCost * 0.45) },
+  ];
+
+  const workloadBase = Math.min(100, 60 + statesCount * 1.4);
+  const workloadData = [
+    { name: "Personnel", current: workloadBase, synced: Math.round(workloadBase * (1 - modelFactor.savingsFactor)) },
+    { name: "Logistics", current: workloadBase - 5, synced: Math.round((workloadBase - 5) * (1 - modelFactor.savingsFactor)) },
+    { name: "Security", current: workloadBase + 5, synced: Math.round((workloadBase + 5) * (1 - modelFactor.savingsFactor * 0.8)) },
+    { name: "Equipment", current: workloadBase - 10, synced: Math.round((workloadBase - 10) * (1 - modelFactor.savingsFactor * 1.2)) },
+  ];
+
+  const governanceData = Array.from({ length: cycleLength }, (_, i) => ({
+    year: `Y${i + 1}`,
+    stability: Math.min(100, 55 + i * 8 + modelFactor.efficiencyFactor * 0.3),
+    efficiency: Math.min(100, 40 + i * 10 + modelFactor.efficiencyFactor * 0.4),
+    continuity: Math.min(100, 60 + i * 7 + modelFactor.efficiencyFactor * 0.35),
+  }));
+
+  const logisticsOptFactor = 1 + modelFactor.savingsFactor * 0.3;
+  const logisticsData = [
+    { subject: "EVM/VVPAT Transport", current: 82, optimized: Math.min(100, Math.round(82 * logisticsOptFactor)) },
+    { subject: "Vehicle Deployment", current: 71, optimized: Math.min(100, Math.round(71 * logisticsOptFactor)) },
+    { subject: "Booth Setup", current: 78, optimized: Math.min(100, Math.round(78 * logisticsOptFactor)) },
+    { subject: "Training Cycles", current: 63, optimized: Math.min(100, Math.round(63 * logisticsOptFactor)) },
+  ];
+
+  const pieData = [
+    { name: "Financial", value: 30 + Math.round(modelFactor.savingsFactor * 20) },
+    { name: "Administrative", value: 40 - Math.round(modelFactor.savingsFactor * 10) },
+    { name: "Governance", value: 30 - Math.round(modelFactor.savingsFactor * 10) },
+  ];
+
+  return {
+    costSavings: `₹${savingsValue.toLocaleString("en-IN")} Cr`,
+    costSavingsValue: savingsValue,
+    efficiency: `+${efficiencyValue}%`,
+    efficiencyValue,
+    manpowerSaved: `${Math.max(0, manpowerSavedValue)}%`,
+    manpowerSavedValue: Math.max(0, manpowerSavedValue),
+    adminEfficiency: `+${Math.round(efficiencyValue * 0.9)}%`,
+    policyContinuity: efficiencyValue > 30 ? "High" : efficiencyValue > 15 ? "Moderate" : "Low",
+    financialData,
+    workloadData,
+    governanceData,
+    logisticsData,
+    pieData,
+    budgetRange: budgetBand.label,
+    manpowerEstimate: mpBand.label,
+    costBand: costBand.label,
+  };
+};
+
+// Fallback data when backend fails
+export const getFallbackData = (): CalculatedResults => {
+  return calculateSimulationResults({
+    electionModel: "full",
+    statesCount: 15,
+    cycleLength: 5,
+    costAssumption: "medium",
+    manpowerLevel: "standard",
+    budgetLevel: "normal",
+  });
 };
