@@ -365,7 +365,7 @@ const Comparison = () => {
 
         {/* Actions */}
         <div className="mt-8 flex justify-center gap-4">
-          {(canExport() || !isViewOnly()) && (
+          {canExport() && (
             <Button 
               variant="outline" 
               className="gap-2"

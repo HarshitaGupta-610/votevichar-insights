@@ -262,24 +262,26 @@ const Insights = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              variant="outline" 
-              className="gap-2"
-              onClick={handleExportPDF}
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating PDF...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  Download Insights PDF
-                </>
-              )}
-            </Button>
+            {canExport() && (
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Download Insights PDF
+                  </>
+                )}
+              </Button>
+            )}
             <Button asChild variant="outline" className="gap-2">
               <Link to="/scenario-setup">
                 <RotateCcw className="w-4 h-4" />
