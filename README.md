@@ -78,6 +78,7 @@ VoteVichar addresses this gap by providing a **scenario-based simulation platfor
 - **React Router** – Page-based navigation and user flow management  
 - **Chart.js / Recharts** – Data visualization through charts and dashboards  
 - **GitHub** – Version control, collaboration, and project management  
+- **supabase** – Backend connection and store user data
 
 ---
 
