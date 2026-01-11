@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { demoSimulations } from "@/data/electionDatasets";
 
 export interface Simulation {
   id: string;
@@ -42,18 +43,29 @@ export const useSimulations = () => {
   } = useQuery({
     queryKey: ["simulations", user?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!user) {
+        // Return demo simulations for guests/unauthenticated users
+        return demoSimulations as unknown as Simulation[];
+      }
 
-      const { data, error } = await supabase
-        .from("simulations")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("simulations")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data as Simulation[];
+        if (error) throw error;
+        
+        // If no data, return empty array (not demo data for authenticated users)
+        return (data as Simulation[]) || [];
+      } catch (err) {
+        console.error("Error fetching simulations, using fallback:", err);
+        // Fallback to empty array on error for authenticated users
+        return [];
+      }
     },
-    enabled: !!user,
+    enabled: true, // Always enabled to support guest mode
   });
 
   const createSimulation = useMutation({
@@ -113,6 +125,39 @@ export const useSimulations = () => {
     return simulations.slice(0, count);
   };
 
+  // Get user's simulations (for comparison, history, etc.)
+  const getUserSimulations = async (userId: string): Promise<Simulation[]> => {
+    try {
+      const { data, error } = await supabase
+        .from("simulations")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data as Simulation[]) || [];
+    } catch (err) {
+      console.error("Error fetching user simulations:", err);
+      return [];
+    }
+  };
+
+  // Save simulation with all parameters
+  const saveSimulation = async (simulationData: CreateSimulationData): Promise<Simulation | null> => {
+    if (!user) {
+      console.error("Cannot save simulation: User not authenticated");
+      return null;
+    }
+
+    try {
+      const result = await createSimulation.mutateAsync(simulationData);
+      return result;
+    } catch (err) {
+      console.error("Error saving simulation:", err);
+      return null;
+    }
+  };
+
   return {
     simulations,
     isLoading,
@@ -122,5 +167,7 @@ export const useSimulations = () => {
     updateSimulation,
     deleteSimulation,
     getRecentSimulations,
+    getUserSimulations,
+    saveSimulation,
   };
 };

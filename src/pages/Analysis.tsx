@@ -11,56 +11,44 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
-const financialData = [
-  { name: "Current", cost: 55000, savings: 0 },
-  { name: "Partial", cost: 42000, savings: 13000 },
-  { name: "Full Sync", cost: 28000, savings: 27000 },
-];
-
-const workloadData = [
-  { name: "Personnel", current: 85, synced: 60 },
-  { name: "Logistics", current: 75, synced: 50 },
-  { name: "Security", current: 90, synced: 70 },
-  { name: "Equipment", current: 80, synced: 45 },
-];
-
-const pieData = [
-  { name: "Financial", value: 35 },
-  { name: "Administrative", value: 40 },
-  { name: "Governance", value: 25 },
-];
-
-const governanceData = [
-  { year: "Y1", stability: 65, efficiency: 50, continuity: 70 },
-  { year: "Y2", stability: 72, efficiency: 62, continuity: 75 },
-  { year: "Y3", stability: 78, efficiency: 70, continuity: 80 },
-  { year: "Y4", stability: 82, efficiency: 78, continuity: 85 },
-  { year: "Y5", stability: 88, efficiency: 85, continuity: 90 },
-];
-
-const logisticsData = [
-  { subject: "EVMs", current: 80, optimized: 95 },
-  { subject: "Vehicles", current: 70, optimized: 88 },
-  { subject: "Booths", current: 75, optimized: 92 },
-  { subject: "Training", current: 65, optimized: 85 },
-  { subject: "Comm.", current: 72, optimized: 90 },
-];
-
 const COLORS = ["hsl(220, 60%, 35%)", "hsl(145, 55%, 35%)", "hsl(24, 90%, 55%)", "hsl(200, 50%, 50%)"];
 
 const Analysis = () => {
-  const { canExport } = useRole();
-  const { currentParams } = useSimulation();
+  const { canExport, isViewOnly } = useRole();
+  const { currentParams, calculatedResults } = useSimulation();
   const { createSimulation } = useSimulations();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+
+  // Use calculated results from context
+  const {
+    costSavings,
+    efficiency,
+    manpowerSaved,
+    adminEfficiency,
+    policyContinuity,
+    financialData,
+    workloadData,
+    governanceData,
+    logisticsData,
+    pieData,
+  } = calculatedResults;
 
   const handleSaveSimulation = async () => {
     if (!user) {
       toast({
         title: "Login Required",
         description: "Please login to save simulations.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isViewOnly()) {
+      toast({
+        title: "Guest Restriction",
+        description: "Guests cannot save simulations. Please login for full access.",
         variant: "destructive",
       });
       return;
@@ -80,10 +68,10 @@ const Analysis = () => {
         model: modelName,
         states_count: currentParams?.statesCount || 15,
         cycle_length: currentParams?.cycleLength || 5,
-        cost_assumption: currentParams?.costAssumption || "moderate",
+        cost_assumption: currentParams?.costAssumption || "medium",
         manpower_level: currentParams?.manpowerLevel || "standard",
-        cost_savings: "₹27,000 Cr",
-        efficiency: "+35%",
+        cost_savings: costSavings,
+        efficiency: efficiency,
         status: "completed",
       });
 
@@ -102,13 +90,19 @@ const Analysis = () => {
     }
   };
 
+  const modelDisplayName = currentParams?.electionModel === "full" 
+    ? "Full Synchronization" 
+    : currentParams?.electionModel === "partial" 
+      ? "Partial Synchronization" 
+      : "Current System";
+
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">Impact Analysis Dashboard</h1>
           <p className="text-muted-foreground">
-            Simulation results for {currentParams?.electionModel === "full" ? "Full Synchronization" : currentParams?.electionModel === "partial" ? "Partial Synchronization" : "Current System"} model with {currentParams?.statesCount || 15} states
+            Simulation results for {modelDisplayName} model with {currentParams?.statesCount || 15} states
           </p>
         </div>
 
@@ -120,7 +114,7 @@ const Analysis = () => {
                 <IndianRupee className="w-8 h-8 text-primary" />
                 <div>
                   <p className="text-xs text-muted-foreground">Cost Savings</p>
-                  <p className="text-xl font-bold">₹27,000 Cr</p>
+                  <p className="text-xl font-bold">{costSavings}</p>
                 </div>
               </div>
             </CardContent>
@@ -132,7 +126,7 @@ const Analysis = () => {
                 <Users className="w-8 h-8 text-india-green" />
                 <div>
                   <p className="text-xs text-muted-foreground">Manpower Saved</p>
-                  <p className="text-xl font-bold">35%</p>
+                  <p className="text-xl font-bold">{manpowerSaved}</p>
                 </div>
               </div>
             </CardContent>
@@ -144,7 +138,7 @@ const Analysis = () => {
                 <Building className="w-8 h-8 text-saffron" />
                 <div>
                   <p className="text-xs text-muted-foreground">Admin Efficiency</p>
-                  <p className="text-xl font-bold">+42%</p>
+                  <p className="text-xl font-bold">{adminEfficiency}</p>
                 </div>
               </div>
             </CardContent>
@@ -156,7 +150,7 @@ const Analysis = () => {
                 <TrendingUp className="w-8 h-8 text-chakra-blue" />
                 <div>
                   <p className="text-xs text-muted-foreground">Policy Continuity</p>
-                  <p className="text-xl font-bold">High</p>
+                  <p className="text-xl font-bold">{policyContinuity}</p>
                 </div>
               </div>
             </CardContent>
@@ -331,7 +325,7 @@ const Analysis = () => {
             variant="outline" 
             className="gap-2" 
             onClick={handleSaveSimulation}
-            disabled={isSaving || !user}
+            disabled={isSaving || !user || isViewOnly()}
           >
             {isSaving ? (
               <>

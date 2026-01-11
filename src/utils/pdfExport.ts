@@ -13,6 +13,14 @@ export interface InsightsPDFData {
   timeline: string;
   prerequisites: string;
   riskLevel: string;
+  // Extended parameters
+  budgetRange?: string;
+  manpowerEstimate?: string;
+  costBand?: string;
+  electionModel?: string;
+  costAssumption?: string;
+  manpowerLevel?: string;
+  budgetLevel?: string;
 }
 
 export const generateInsightsPDF = async (data: InsightsPDFData): Promise<Blob> => {
@@ -81,6 +89,37 @@ export const generateInsightsPDF = async (data: InsightsPDFData): Promise<Blob> 
   pdf.text(summaryText, margin + 5, yPos + 22);
   
   yPos += 45;
+
+  // Parameter Breakdown (if available)
+  if (data.costBand || data.budgetRange || data.manpowerEstimate) {
+    pdf.setTextColor(26, 54, 93);
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Parameter Breakdown", margin, yPos);
+    yPos += 8;
+
+    pdf.setFillColor(248, 248, 248);
+    pdf.roundedRect(margin, yPos, pageWidth - 2 * margin, 28, 3, 3, "F");
+    
+    pdf.setTextColor(60, 60, 60);
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "normal");
+    
+    let paramY = yPos + 8;
+    if (data.costBand) {
+      pdf.text(`Cost Band: ${data.costBand}`, margin + 5, paramY);
+      paramY += 6;
+    }
+    if (data.budgetRange) {
+      pdf.text(`Budget Range: ${data.budgetRange}`, margin + 5, paramY);
+      paramY += 6;
+    }
+    if (data.manpowerEstimate) {
+      pdf.text(`Manpower Estimate: ${data.manpowerEstimate}`, margin + 5, paramY);
+    }
+    
+    yPos += 35;
+  }
 
   // Key Metrics
   pdf.setTextColor(26, 54, 93);

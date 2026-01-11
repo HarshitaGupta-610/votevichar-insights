@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,22 +7,78 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import PageLayout from "@/components/layout/PageLayout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
-import { ArrowUpRight, ArrowDownRight, Minus, Plus, Download, GitCompare } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Minus, Plus, Download, GitCompare, Loader2 } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
 import { useSimulation } from "@/contexts/SimulationContext";
+import { useSimulations, Simulation } from "@/hooks/useSimulations";
+import { demoSimulations, calculateSimulationResults } from "@/data/electionDatasets";
+import { downloadPDF, InsightsPDFData } from "@/utils/pdfExport";
+import { useToast } from "@/hooks/use-toast";
 
 const Comparison = () => {
-  const { canAccessHistory, canExport } = useRole();
+  const { canAccessHistory, canExport, isViewOnly } = useRole();
   const { savedSimulations } = useSimulation();
-  const [scenario1, setScenario1] = useState(savedSimulations[0]?.id || "");
-  const [scenario2, setScenario2] = useState(savedSimulations[2]?.id || "");
+  const { simulations } = useSimulations();
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Use real simulations for logged-in users, demo for guests
+  const displaySimulations = useMemo(() => {
+    if (isViewOnly()) {
+      return demoSimulations.map(sim => ({
+        id: sim.id,
+        name: sim.name,
+        model: sim.model,
+        states: sim.states_count,
+        cycle: sim.cycle_length,
+        costSavings: sim.cost_savings,
+        efficiency: sim.efficiency,
+        costAssumption: sim.cost_assumption,
+        manpowerLevel: sim.manpower_level,
+        budgetLevel: sim.budget_level || "normal",
+      }));
+    }
+    
+    // Map real simulations to comparison format
+    if (simulations.length > 0) {
+      return simulations.map(sim => ({
+        id: sim.id,
+        name: sim.name,
+        model: sim.model,
+        states: sim.states_count,
+        cycle: sim.cycle_length,
+        costSavings: sim.cost_savings || "N/A",
+        efficiency: sim.efficiency || "N/A",
+        costAssumption: sim.cost_assumption,
+        manpowerLevel: sim.manpower_level,
+        budgetLevel: "normal",
+      }));
+    }
+    
+    // Fallback to context saved simulations
+    return savedSimulations.map(sim => ({
+      id: sim.id,
+      name: sim.name,
+      model: sim.model,
+      states: sim.states,
+      cycle: sim.cycle,
+      costSavings: sim.costSavings,
+      efficiency: sim.efficiency,
+      costAssumption: sim.params?.costAssumption || "medium",
+      manpowerLevel: sim.params?.manpowerLevel || "standard",
+      budgetLevel: sim.params?.budgetLevel || "normal",
+    }));
+  }, [isViewOnly, simulations, savedSimulations]);
+
+  const [scenario1, setScenario1] = useState(displaySimulations[0]?.id || "");
+  const [scenario2, setScenario2] = useState(displaySimulations[2]?.id || displaySimulations[1]?.id || "");
 
   if (!canAccessHistory()) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const sim1 = savedSimulations.find((s) => s.id === scenario1);
-  const sim2 = savedSimulations.find((s) => s.id === scenario2);
+  const sim1 = displaySimulations.find((s) => s.id === scenario1);
+  const sim2 = displaySimulations.find((s) => s.id === scenario2);
 
   // Generate comparison data based on selected scenarios
   const comparisonMetrics = [
@@ -40,8 +96,8 @@ const Comparison = () => {
     },
     { 
       metric: "States Covered", 
-      scenario1: sim1?.states.toString() || "N/A", 
-      scenario2: sim2?.states.toString() || "N/A", 
+      scenario1: sim1?.states?.toString() || "N/A", 
+      scenario2: sim2?.states?.toString() || "N/A", 
       diff: sim1 && sim2 && sim1.states > sim2.states ? "better" : "worse" 
     },
     { 
@@ -54,6 +110,18 @@ const Comparison = () => {
       metric: "Model Type", 
       scenario1: sim1?.model || "N/A", 
       scenario2: sim2?.model || "N/A", 
+      diff: "same" 
+    },
+    { 
+      metric: "Cost Assumption", 
+      scenario1: sim1?.costAssumption || "N/A", 
+      scenario2: sim2?.costAssumption || "N/A", 
+      diff: "same" 
+    },
+    { 
+      metric: "Manpower Level", 
+      scenario1: sim1?.manpowerLevel || "N/A", 
+      scenario2: sim2?.manpowerLevel || "N/A", 
       diff: "same" 
     },
   ];
@@ -77,13 +145,54 @@ const Comparison = () => {
     },
   ];
 
-  const trendData = [
-    { year: "Y1", scenario1: 10, scenario2: 8 },
-    { year: "Y2", scenario1: 25, scenario2: 18 },
-    { year: "Y3", scenario1: 42, scenario2: 30 },
-    { year: "Y4", scenario1: 58, scenario2: 42 },
-    { year: "Y5", scenario1: 75, scenario2: 55 },
-  ];
+  // Dynamic trend data based on cycle length
+  const maxCycle = Math.max(sim1?.cycle || 5, sim2?.cycle || 5);
+  const trendData = Array.from({ length: maxCycle }, (_, i) => ({
+    year: `Y${i + 1}`,
+    scenario1: Math.round(10 + (i * 15) * (parseInt(sim1?.efficiency?.replace(/[^0-9]/g, "") || "20") / 30)),
+    scenario2: Math.round(8 + (i * 12) * (parseInt(sim2?.efficiency?.replace(/[^0-9]/g, "") || "15") / 30)),
+  }));
+
+  const handleExportReport = async () => {
+    setIsExporting(true);
+    try {
+      const pdfData: InsightsPDFData = {
+        scenarioName: `Comparison: ${sim1?.name} vs ${sim2?.name}`,
+        statesCount: Math.max(sim1?.states || 0, sim2?.states || 0),
+        cycleLength: Math.max(sim1?.cycle || 5, sim2?.cycle || 5),
+        costSavings: `${sim1?.costSavings} vs ${sim2?.costSavings}`,
+        efficiency: `${sim1?.efficiency} vs ${sim2?.efficiency}`,
+        complexity: "Comparative Analysis",
+        benefits: [
+          `Scenario 1 (${sim1?.name}): ${sim1?.costSavings} savings`,
+          `Scenario 2 (${sim2?.name}): ${sim2?.costSavings} savings`,
+          "Side-by-side comparison of election models",
+        ],
+        considerations: [
+          "Each model has different implementation requirements",
+          "Cost and manpower trade-offs vary by scenario",
+          "Regional factors affect outcomes",
+        ],
+        timeline: "Varies by scenario",
+        prerequisites: "Depends on selected model",
+        riskLevel: "Comparative",
+      };
+
+      await downloadPDF(pdfData, `VoteVichar_Comparison_Report.pdf`);
+      toast({
+        title: "Report Downloaded",
+        description: "Comparison report has been downloaded.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to generate report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <PageLayout>
@@ -112,7 +221,7 @@ const Comparison = () => {
                     <SelectValue placeholder="Select first scenario" />
                   </SelectTrigger>
                   <SelectContent>
-                    {savedSimulations.map((sim) => (
+                    {displaySimulations.map((sim) => (
                       <SelectItem key={sim.id} value={sim.id} disabled={sim.id === scenario2}>
                         {sim.name}
                       </SelectItem>
@@ -130,7 +239,7 @@ const Comparison = () => {
                     <SelectValue placeholder="Select second scenario" />
                   </SelectTrigger>
                   <SelectContent>
-                    {savedSimulations.map((sim) => (
+                    {displaySimulations.map((sim) => (
                       <SelectItem key={sim.id} value={sim.id} disabled={sim.id === scenario1}>
                         {sim.name}
                       </SelectItem>
@@ -256,10 +365,24 @@ const Comparison = () => {
 
         {/* Actions */}
         <div className="mt-8 flex justify-center gap-4">
-          {canExport() && (
-            <Button variant="outline" className="gap-2">
-              <Download className="w-4 h-4" />
-              Export Report
+          {(canExport() || !isViewOnly()) && (
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={handleExportReport}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Export Report
+                </>
+              )}
             </Button>
           )}
           <Button asChild className="gap-2">

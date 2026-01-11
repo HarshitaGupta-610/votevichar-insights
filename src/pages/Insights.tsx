@@ -12,9 +12,24 @@ import { useState } from "react";
 
 const Insights = () => {
   const { canExport, isViewOnly } = useRole();
-  const { currentScenario, currentParams } = useSimulation();
+  const { currentScenario, currentParams, calculatedResults } = useSimulation();
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+
+  const {
+    costSavings,
+    efficiency,
+    budgetRange,
+    manpowerEstimate,
+    costBand,
+  } = calculatedResults;
+
+  // Determine complexity based on model
+  const complexity = currentParams?.electionModel === "full" 
+    ? "High" 
+    : currentParams?.electionModel === "partial" 
+      ? "Moderate" 
+      : "Low";
 
   const handleExportPDF = async () => {
     setIsExporting(true);
@@ -23,9 +38,9 @@ const Insights = () => {
         scenarioName: currentScenario.name,
         statesCount: currentParams?.statesCount || 15,
         cycleLength: currentParams?.cycleLength || 5,
-        costSavings: currentScenario.costSavings,
-        efficiency: currentScenario.efficiency,
-        complexity: currentScenario.complexity,
+        costSavings: costSavings,
+        efficiency: efficiency,
+        complexity: complexity,
         benefits: [
           "Reduced election expenditure through consolidated operations",
           "Lower personnel deployment and logistics overhead",
@@ -39,6 +54,14 @@ const Insights = () => {
         timeline: "Estimated 3-5 years for full implementation with phased rollout",
         prerequisites: "Political consensus, constitutional amendments, ECI capacity expansion",
         riskLevel: "Moderate - requires careful stakeholder engagement",
+        // Additional parameter breakdown
+        budgetRange,
+        manpowerEstimate,
+        costBand,
+        electionModel: currentParams?.electionModel || "current",
+        costAssumption: currentParams?.costAssumption || "medium",
+        manpowerLevel: currentParams?.manpowerLevel || "standard",
+        budgetLevel: currentParams?.budgetLevel || "normal",
       };
 
       await downloadPDF(pdfData);
@@ -57,6 +80,12 @@ const Insights = () => {
     }
   };
 
+  const modelDisplayName = currentParams?.electionModel === "full" 
+    ? "Full Synchronization" 
+    : currentParams?.electionModel === "partial" 
+      ? "Partial Synchronization" 
+      : "Current System";
+
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8">
@@ -64,7 +93,7 @@ const Insights = () => {
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">Insights & Summary</h1>
             <p className="text-muted-foreground">
-              Key findings from {currentScenario.name} with {currentParams?.statesCount || 15} states
+              Key findings from {modelDisplayName} with {currentParams?.statesCount || 15} states
             </p>
           </div>
 
@@ -78,22 +107,52 @@ const Insights = () => {
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <p>
-                The simulation of <strong>{currentScenario.name}</strong> across <strong>{currentParams?.statesCount || 15} states</strong> with 
+                The simulation of <strong>{modelDisplayName}</strong> across <strong>{currentParams?.statesCount || 15} states</strong> with 
                 a <strong>{currentParams?.cycleLength || 5}-year election cycle</strong> indicates significant potential for cost reduction 
                 and administrative efficiency gains, with notable trade-offs in implementation complexity.
               </p>
               <div className="grid md:grid-cols-3 gap-4 pt-4">
                 <div className="text-center p-4 bg-india-green/10 rounded-lg">
-                  <p className="text-2xl font-bold text-india-green">{currentScenario.costSavings}</p>
+                  <p className="text-2xl font-bold text-india-green">{costSavings}</p>
                   <p className="text-xs text-muted-foreground">Projected Savings</p>
                 </div>
                 <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <p className="text-2xl font-bold text-primary">{currentScenario.efficiency}</p>
+                  <p className="text-2xl font-bold text-primary">{efficiency}</p>
                   <p className="text-xs text-muted-foreground">Efficiency Gain</p>
                 </div>
                 <div className="text-center p-4 bg-saffron/10 rounded-lg">
-                  <p className="text-2xl font-bold text-saffron">{currentScenario.complexity}</p>
+                  <p className="text-2xl font-bold text-saffron">{complexity}</p>
                   <p className="text-xs text-muted-foreground">Complexity</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Parameter Breakdown */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Info className="w-5 h-5 text-primary" />
+                Parameter Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Election Model</p>
+                  <p className="font-medium">{modelDisplayName}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Cost Band</p>
+                  <p className="font-medium">{costBand}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Budget Range</p>
+                  <p className="font-medium">{budgetRange}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Manpower Estimate</p>
+                  <p className="font-medium">{manpowerEstimate}</p>
                 </div>
               </div>
             </CardContent>
@@ -203,26 +262,24 @@ const Insights = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {(canExport() || !isViewOnly()) && (
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={handleExportPDF}
-                disabled={isExporting}
-              >
-                {isExporting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating PDF...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Download Insights PDF
-                  </>
-                )}
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={handleExportPDF}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Download Insights PDF
+                </>
+              )}
+            </Button>
             <Button asChild variant="outline" className="gap-2">
               <Link to="/scenario-setup">
                 <RotateCcw className="w-4 h-4" />

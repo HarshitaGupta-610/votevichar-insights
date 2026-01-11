@@ -10,6 +10,10 @@ interface RoleContextType {
   canExport: () => boolean;
   canAccessHistory: () => boolean;
   isViewOnly: () => boolean;
+  canSaveSimulations: () => boolean;
+  canModifyProfile: () => boolean;
+  canSwitchRole: () => boolean;
+  canVerifyAsGovernment: () => boolean;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -22,6 +26,12 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
   const canExport = () => role === "government";
   const canAccessHistory = () => role === "government" || role === "researcher";
   const isViewOnly = () => role === "guest";
+  
+  // Guest restrictions
+  const canSaveSimulations = () => role === "government" || role === "researcher";
+  const canModifyProfile = () => role === "government" || role === "researcher";
+  const canSwitchRole = () => role === "government" || role === "researcher";
+  const canVerifyAsGovernment = () => role === "government" || role === "researcher";
 
   return (
     <RoleContext.Provider
@@ -33,6 +43,10 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
         canExport,
         canAccessHistory,
         isViewOnly,
+        canSaveSimulations,
+        canModifyProfile,
+        canSwitchRole,
+        canVerifyAsGovernment,
       }}
     >
       {children}

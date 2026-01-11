@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import PageLayout from "@/components/layout/PageLayout";
-import { Play, Settings2, IndianRupee, Users, Calendar } from "lucide-react";
+import { Play, Settings2, IndianRupee, Users, Calendar, Wallet } from "lucide-react";
 import { useSimulation, SimulationParams } from "@/contexts/SimulationContext";
 
 const ScenarioSetup = () => {
@@ -17,6 +17,7 @@ const ScenarioSetup = () => {
   const [cycleLength, setCycleLength] = useState([5]);
   const [costAssumption, setCostAssumption] = useState("");
   const [manpowerLevel, setManpowerLevel] = useState("");
+  const [budgetLevel, setBudgetLevel] = useState("");
 
   const handleRunSimulation = () => {
     // Backend-ready: Prepare data object for API
@@ -26,6 +27,7 @@ const ScenarioSetup = () => {
       cycleLength: cycleLength[0],
       costAssumption,
       manpowerLevel,
+      budgetLevel,
     };
 
     // Store params in context (ready for backend integration)
@@ -65,9 +67,9 @@ const ScenarioSetup = () => {
                     <SelectValue placeholder="Select election model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="current">Current System (Staggered Elections)</SelectItem>
-                    <SelectItem value="partial">Partial Synchronization (Regional Clusters)</SelectItem>
-                    <SelectItem value="full">Full Synchronization (One Nation One Election)</SelectItem>
+                    <SelectItem value="current">Current System – Elections happen at different times across states</SelectItem>
+                    <SelectItem value="partial">Partial Synchronization – Some states vote together in planned groups</SelectItem>
+                    <SelectItem value="full">Full Synchronization – Whole country votes on the same day (One Nation One Election)</SelectItem>
                   </SelectContent>
                 </Select>
               </CardContent>
@@ -142,7 +144,7 @@ const ScenarioSetup = () => {
                   </div>
                   <div>
                     <CardTitle className="text-base">Cost Assumptions</CardTitle>
-                    <CardDescription>Baseline cost model for estimation</CardDescription>
+                    <CardDescription>ECI-based election cost baseline</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -152,9 +154,9 @@ const ScenarioSetup = () => {
                     <SelectValue placeholder="Select cost assumption" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="conservative">Conservative (Lower Bound)</SelectItem>
-                    <SelectItem value="moderate">Moderate (Average Estimate)</SelectItem>
-                    <SelectItem value="aggressive">Aggressive (Upper Bound)</SelectItem>
+                    <SelectItem value="low">Low Cost Estimate (₹8,000-10,000 Cr) – Minimal infrastructure and logistics</SelectItem>
+                    <SelectItem value="medium">Medium Cost Estimate (₹10,000-13,000 Cr) – Standard ECI allocation</SelectItem>
+                    <SelectItem value="high">High Cost Estimate (₹13,000-17,000 Cr) – Full security and expanded coverage</SelectItem>
                   </SelectContent>
                 </Select>
               </CardContent>
@@ -179,9 +181,37 @@ const ScenarioSetup = () => {
                     <SelectValue placeholder="Select manpower level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="current">Current System (Staggered Elections)</SelectItem> 
-                    <SelectItem value="partial">Partial Synchronization (Regional Clusters)</SelectItem> 
-                    <SelectItem value="full">Full Synchronization (One Nation One Election)</SelectItem> 
+                    <SelectItem value="minimal">Minimal Staffing (20-30% fewer staff) – Reduced deployment model</SelectItem>
+                    <SelectItem value="standard">Standard Staffing (Normal levels) – Current ECI staffing pattern</SelectItem>
+                    <SelectItem value="heavy">Heavy Staffing (25-40% more staff) – Enhanced security deployment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            {/* Budget Level */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-saffron/10 rounded-lg flex items-center justify-center">
+                    <Wallet className="w-5 h-5 text-saffron" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Budget Availability</CardTitle>
+                    <CardDescription>Available financial allocation for the election</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Select value={budgetLevel} onValueChange={setBudgetLevel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select budget level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tight">Tight Budget (₹6,000-8,000 Cr) – Limited funding scenario</SelectItem>
+                    <SelectItem value="normal">Normal Budget (₹9,000-12,000 Cr) – Standard allocation</SelectItem>
+                    <SelectItem value="comfortable">Comfortable Budget (₹12,000-15,000 Cr) – Enhanced allocation</SelectItem>
+                    <SelectItem value="high">High Budget (₹16,000-20,000 Cr) – Full funding availability</SelectItem>
                   </SelectContent>
                 </Select>
               </CardContent>
