@@ -33,7 +33,7 @@ const Dashboard = () => {
       bgColor: "bg-primary/10",
       borderColor: "border-l-primary",
       requiresFullAccess: false,
-      disabled: isViewOnly(),
+      disabled: false, // Guests can run simulations
     },
     {
       title: "View History",
