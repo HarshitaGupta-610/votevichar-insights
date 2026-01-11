@@ -1,5 +1,5 @@
 # 🗳️ VoteVichar  
-### Thoughtful, data-driven insights for election synchronization
+### Election Synchronization Feasibility & Impact Simulator
 
 ---
 
