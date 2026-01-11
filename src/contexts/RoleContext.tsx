@@ -22,12 +22,12 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole>(null);
 
   const hasFullAccess = () => role === "government";
-  const canAccessAnalysis = () => role === "government" || role === "researcher";
-  const canExport = () => role === "government";
+  const canAccessAnalysis = () => role === "government" || role === "researcher" || role === "guest";
+  const canExport = () => role === "government" || role === "researcher"; // Guests cannot download
   const canAccessHistory = () => role === "government" || role === "researcher";
   const isViewOnly = () => role === "guest";
   
-  // Guest restrictions
+  // Guest restrictions - guests can run simulations but cannot save or download
   const canSaveSimulations = () => role === "government" || role === "researcher";
   const canModifyProfile = () => role === "government" || role === "researcher";
   const canSwitchRole = () => role === "government" || role === "researcher";
