@@ -179,18 +179,9 @@ const ScenarioSetup = () => {
                     <SelectValue placeholder="Select manpower level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="current">
-  Current System – Elections happen at different times across states
-</SelectItem>
-
-<SelectItem value="partial">
-  Partial Synchronization – Some states vote together in planned groups
-</SelectItem>
-
-<SelectItem value="full">
-  Full Synchronization – Whole country votes on the same day (One Nation One Election)
-</SelectItem>
-
+                    <SelectItem value="current">Current System (Staggered Elections)</SelectItem> 
+                    <SelectItem value="partial">Partial Synchronization (Regional Clusters)</SelectItem> 
+                    <SelectItem value="full">Full Synchronization (One Nation One Election)</SelectItem> 
                   </SelectContent>
                 </Select>
               </CardContent>
