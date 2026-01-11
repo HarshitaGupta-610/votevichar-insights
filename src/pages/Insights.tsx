@@ -3,11 +3,59 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import PageLayout from "@/components/layout/PageLayout";
-import { CheckCircle2, AlertTriangle, Info, ArrowRight, RotateCcw, LayoutDashboard, FileText, Scale, Clock, Shield, Download } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Info, ArrowRight, RotateCcw, LayoutDashboard, FileText, Scale, Clock, Shield, Download, Loader2 } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
+import { useSimulation } from "@/contexts/SimulationContext";
+import { downloadPDF, InsightsPDFData } from "@/utils/pdfExport";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const Insights = () => {
-  const { canExport } = useRole();
+  const { canExport, isViewOnly } = useRole();
+  const { currentScenario, currentParams } = useSimulation();
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const pdfData: InsightsPDFData = {
+        scenarioName: currentScenario.name,
+        statesCount: currentParams?.statesCount || 15,
+        cycleLength: currentParams?.cycleLength || 5,
+        costSavings: currentScenario.costSavings,
+        efficiency: currentScenario.efficiency,
+        complexity: currentScenario.complexity,
+        benefits: [
+          "Reduced election expenditure through consolidated operations",
+          "Lower personnel deployment and logistics overhead",
+          "Improved policy continuity with longer stable terms",
+        ],
+        considerations: [
+          "Constitutional amendments required for implementation",
+          "Impact on state autonomy and regional representation",
+          "Large-scale EVM and security coordination challenges",
+        ],
+        timeline: "Estimated 3-5 years for full implementation with phased rollout",
+        prerequisites: "Political consensus, constitutional amendments, ECI capacity expansion",
+        riskLevel: "Moderate - requires careful stakeholder engagement",
+      };
+
+      await downloadPDF(pdfData);
+      toast({
+        title: "PDF Downloaded",
+        description: "Your insights report has been downloaded successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <PageLayout>
@@ -16,7 +64,7 @@ const Insights = () => {
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">Insights & Summary</h1>
             <p className="text-muted-foreground">
-              Key findings from Full Synchronization scenario with 15 states
+              Key findings from {currentScenario.name} with {currentParams?.statesCount || 15} states
             </p>
           </div>
 
@@ -30,21 +78,21 @@ const Insights = () => {
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <p>
-                The simulation of <strong>Full Synchronization</strong> across <strong>15 states</strong> with 
-                a <strong>5-year election cycle</strong> indicates significant potential for cost reduction 
+                The simulation of <strong>{currentScenario.name}</strong> across <strong>{currentParams?.statesCount || 15} states</strong> with 
+                a <strong>{currentParams?.cycleLength || 5}-year election cycle</strong> indicates significant potential for cost reduction 
                 and administrative efficiency gains, with notable trade-offs in implementation complexity.
               </p>
               <div className="grid md:grid-cols-3 gap-4 pt-4">
                 <div className="text-center p-4 bg-india-green/10 rounded-lg">
-                  <p className="text-2xl font-bold text-india-green">₹27,000 Cr</p>
+                  <p className="text-2xl font-bold text-india-green">{currentScenario.costSavings}</p>
                   <p className="text-xs text-muted-foreground">Projected Savings</p>
                 </div>
                 <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <p className="text-2xl font-bold text-primary">35%</p>
+                  <p className="text-2xl font-bold text-primary">{currentScenario.efficiency}</p>
                   <p className="text-xs text-muted-foreground">Efficiency Gain</p>
                 </div>
                 <div className="text-center p-4 bg-saffron/10 rounded-lg">
-                  <p className="text-2xl font-bold text-saffron">Moderate</p>
+                  <p className="text-2xl font-bold text-saffron">{currentScenario.complexity}</p>
                   <p className="text-xs text-muted-foreground">Complexity</p>
                 </div>
               </div>
@@ -155,10 +203,24 @@ const Insights = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {canExport() && (
-              <Button variant="outline" className="gap-2">
-                <Download className="w-4 h-4" />
-                Export Report
+            {(canExport() || !isViewOnly()) && (
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Download Insights PDF
+                  </>
+                )}
               </Button>
             )}
             <Button asChild variant="outline" className="gap-2">
