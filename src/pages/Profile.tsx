@@ -3,18 +3,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import PageLayout from "@/components/layout/PageLayout";
-import { User, Mail, Phone, Shield, LogOut, Building2, GraduationCap, Loader2 } from "lucide-react";
+import { User, Mail, Phone, Shield, LogOut, Building2, GraduationCap, Loader2, Lock, Users, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { ChangePasswordModal } from "@/components/modals/ChangePasswordModal";
+import { UpdatePhoneModal } from "@/components/modals/UpdatePhoneModal";
+import { SwitchRoleModal } from "@/components/modals/SwitchRoleModal";
+import { VerificationModal } from "@/components/modals/VerificationModal";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
-  const { role, setRole } = useRole();
+  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { role, setRole, isViewOnly } = useRole();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  
+  // Modal states
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   // Sync role from profile
   useEffect(() => {
@@ -34,7 +45,16 @@ const Profile = () => {
     navigate("/");
   };
 
+  const handleVerification = () => {
+    setIsVerified(true);
+    toast({
+      title: "Verified",
+      description: "You are now verified as a Government Official.",
+    });
+  };
+
   const currentRole = profile?.role || role;
+  const isGuest = isViewOnly() || currentRole === "guest";
 
   const getRoleBadge = () => {
     switch (currentRole) {
@@ -43,6 +63,7 @@ const Profile = () => {
           <Badge className="bg-primary gap-1">
             <Building2 className="w-3 h-3" />
             Government User
+            {isVerified && <CheckCircle2 className="w-3 h-3 ml-1" />}
           </Badge>
         );
       case "researcher":
@@ -123,7 +144,66 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Account Actions - Only for logged in users */}
+              {!isGuest && user && (
+                <div className="pt-4 border-t space-y-3">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">Account Settings</p>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowPasswordModal(true)}
+                  >
+                    <Lock className="w-4 h-4" />
+                    Change Password
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowPhoneModal(true)}
+                  >
+                    <Phone className="w-4 h-4" />
+                    Update Phone Number
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowRoleModal(true)}
+                  >
+                    <Users className="w-4 h-4" />
+                    Switch Role
+                  </Button>
+
+                  {currentRole === "government" && !isVerified && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start gap-2 border-primary text-primary hover:bg-primary/10"
+                      onClick={() => setShowVerificationModal(true)}
+                    >
+                      <Shield className="w-4 h-4" />
+                      Verify as Government Official
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Guest Notice */}
+              {isGuest && (
+                <div className="pt-4 border-t">
+                  <div className="bg-muted/50 rounded-lg p-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Guest users have limited access. Login to unlock all features.
+                    </p>
+                    <Button onClick={() => navigate("/login")} className="gap-2">
+                      Login for Full Access
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Logout */}
               <div className="pt-4 border-t">
                 <Button 
                   variant="destructive" 
@@ -148,6 +228,16 @@ const Profile = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <ChangePasswordModal open={showPasswordModal} onOpenChange={setShowPasswordModal} />
+      <UpdatePhoneModal open={showPhoneModal} onOpenChange={setShowPhoneModal} />
+      <SwitchRoleModal open={showRoleModal} onOpenChange={setShowRoleModal} />
+      <VerificationModal 
+        open={showVerificationModal} 
+        onOpenChange={setShowVerificationModal}
+        onVerify={handleVerification}
+      />
     </PageLayout>
   );
 };

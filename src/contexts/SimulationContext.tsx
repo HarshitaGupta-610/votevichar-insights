@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { scenarios, ScenarioConfig, getDefaultScenario } from "@/data/electionDatasets";
 
 export interface SimulationParams {
   electionModel: string;
@@ -6,6 +7,7 @@ export interface SimulationParams {
   cycleLength: number;
   costAssumption: string;
   manpowerLevel: string;
+  scenarioId?: string;
 }
 
 export interface SimulationResult {
@@ -27,6 +29,9 @@ interface SimulationContextType {
   savedSimulations: SimulationResult[];
   saveSimulation: (result: SimulationResult) => void;
   getRecentSimulations: (count: number) => SimulationResult[];
+  currentScenario: ScenarioConfig;
+  setCurrentScenario: (scenario: ScenarioConfig) => void;
+  availableScenarios: ScenarioConfig[];
 }
 
 // Placeholder simulations for demo
@@ -47,6 +52,7 @@ const initialSimulations: SimulationResult[] = [
       cycleLength: 5,
       costAssumption: "moderate",
       manpowerLevel: "standard",
+      scenarioId: "lok-sabha-general",
     },
   },
   {
@@ -65,6 +71,7 @@ const initialSimulations: SimulationResult[] = [
       cycleLength: 5,
       costAssumption: "conservative",
       manpowerLevel: "minimal",
+      scenarioId: "mixed-sync-6-states",
     },
   },
   {
@@ -83,6 +90,7 @@ const initialSimulations: SimulationResult[] = [
       cycleLength: 5,
       costAssumption: "moderate",
       manpowerLevel: "standard",
+      scenarioId: "state-assembly-cycle",
     },
   },
   {
@@ -119,6 +127,7 @@ const initialSimulations: SimulationResult[] = [
       cycleLength: 4,
       costAssumption: "conservative",
       manpowerLevel: "minimal",
+      scenarioId: "low-turnout-stress",
     },
   },
 ];
@@ -128,6 +137,7 @@ const SimulationContext = createContext<SimulationContextType | undefined>(undef
 export const SimulationProvider = ({ children }: { children: ReactNode }) => {
   const [currentParams, setCurrentParams] = useState<SimulationParams | null>(null);
   const [savedSimulations, setSavedSimulations] = useState<SimulationResult[]>(initialSimulations);
+  const [currentScenario, setCurrentScenario] = useState<ScenarioConfig>(getDefaultScenario());
 
   const saveSimulation = (result: SimulationResult) => {
     setSavedSimulations((prev) => [result, ...prev]);
@@ -145,6 +155,9 @@ export const SimulationProvider = ({ children }: { children: ReactNode }) => {
         savedSimulations,
         saveSimulation,
         getRecentSimulations,
+        currentScenario,
+        setCurrentScenario,
+        availableScenarios: scenarios,
       }}
     >
       {children}
